@@ -1,0 +1,6 @@
+downloads/
+tracking/
+states/
+temp/
+.vscode/
+__pycache__/
