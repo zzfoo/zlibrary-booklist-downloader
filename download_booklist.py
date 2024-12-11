@@ -103,7 +103,7 @@ class ZLibraryBooklistDownloader():
         for book in tqdm(to_download_books, desc='Downloading books', unit='book'):
             await self.find_valid_state_file()
             if not self.is_current_state_valid():
-                print('daily limit reached!')
+                print('DAILY LIMIT REACHED! COME BACK TOMORROW!')
                 break
 
             result = await self.download_book(booklist_dir, book)
@@ -157,7 +157,7 @@ class ZLibraryBooklistDownloader():
 
     async def download_book(self, booklist_dir: str, book: dict):
         book_url = f'{DOMAIN}{book["book"]["href"]}'
-        print(book_url)
+        print(f'\nbook_url: {book_url}')
 
         book_path = os.path.join(booklist_dir, f"{book['book']['id']}.{book['book']['extension']}") 
         real_book_path = os.path.join(booklist_dir, sanitize_file_name(f"{book['book']['title']}.{book['book']['extension']}"))
@@ -172,8 +172,7 @@ class ZLibraryBooklistDownloader():
             await page.goto(book_url, wait_until='load', timeout=0)
             try:
                 download_link = await page.locator('a.btn.btn-default.addDownloadedBook').get_attribute('href')
-                real_book_url = f'{DOMAIN}{download_link}'
-                print(real_book_url)
+                download_link = f'{DOMAIN}{download_link}'
             except:
                 print('no download link found')
                 await browser.close()
@@ -182,14 +181,14 @@ class ZLibraryBooklistDownloader():
             async with page.expect_download(timeout=DOWNLOAD_TIMEOUT) as download_info:
                 # Hack
                 try:
-                    await page.goto(real_book_url, wait_until='commit', timeout=0)
+                    await page.goto(download_link, wait_until='commit', timeout=0)
                 except:
                     download = await download_info.value
-                    print(await download.path())
                     await download.save_as(book_path)
                     
+                    sanitized_book_path = get_unique_path(sanitized_book_path)
                     os.rename(book_path, sanitized_book_path)
-
+                    print(f'downloaded book to: {sanitized_book_path}')
             await browser.close()
             return DOWNLOAD_RESULT_SUCCESS
             
@@ -203,6 +202,16 @@ def sanitize_file_name(file_name: str) -> str:
     for char in invalid_chars:
         file_name = file_name.replace(char, '')
     return file_name
+
+def get_unique_path(file_path):
+    """生成唯一的文件路径"""
+    base, ext = os.path.splitext(file_path)
+    counter = 1
+    new_path = file_path
+    while os.path.exists(new_path):
+        new_path = f"{base}({counter}){ext}"
+        counter += 1
+    return new_path
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download books from z-lib')
