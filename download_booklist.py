@@ -23,7 +23,7 @@ class ZLibraryBooklistDownloader():
         self.cur_state_download_today = 0
         self.cur_state_daily_limit = 0
 
-    def fetch_bookinfos(self, url: str):
+    def fetch_booklist(self, url: str):
         base_url = f'{DOMAIN}/papi/booklist/{url.split("/")[-3]}/get-books/'
         page = 1
         all_books = []
@@ -64,22 +64,20 @@ class ZLibraryBooklistDownloader():
         booklist_dir = os.path.join(self.output_dir, booklist_name)
         ensure_dir(booklist_dir)
 
-        tracking_dir = os.path.join(TRACKING_DIR, booklist_name)
-        ensure_dir(tracking_dir)
         # check if books.json exists
-        books_file = os.path.join(tracking_dir, 'books.json')
-        if os.path.exists(books_file):
-            with open(books_file, 'r', encoding='utf-8') as f:
+        booklist_file = os.path.join(TRACKING_DIR, f'{booklist_name}.json')
+        if os.path.exists(booklist_file):
+            with open(booklist_file, 'r', encoding='utf-8') as f:
                 books = json.load(f)
         else:
-            books = self.fetch_bookinfos(url)
-            with open(books_file, 'w', encoding='utf-8') as f:
+            books = self.fetch_booklist(url)
+            with open(booklist_file, 'w', encoding='utf-8') as f:
                 json.dump(books, f, ensure_ascii=False)
 
         print(f'books count: {len(books)}')
         # filter out downloaded books by check downloaded.txt
         downloaded_books = []
-        downloaded_file = os.path.join(tracking_dir, 'downloaded.txt')
+        downloaded_file = os.path.join(TRACKING_DIR, 'downloaded.txt')
         if os.path.exists(downloaded_file):
             with open(downloaded_file, 'r', encoding='utf-8') as f:
                 downloaded_books = f.read().splitlines()
@@ -88,7 +86,7 @@ class ZLibraryBooklistDownloader():
 
         # filter out downloaded books by check invalid.txt
         invalid_books = []
-        invalid_file = os.path.join(tracking_dir, 'invalid.txt')
+        invalid_file = os.path.join(TRACKING_DIR, 'invalid.txt')
         if os.path.exists(invalid_file):
             with open(invalid_file, 'r', encoding='utf-8') as f:
                 invalid_books = f.read().splitlines()
